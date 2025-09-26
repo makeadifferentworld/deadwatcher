@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 import postcss from "postcss";
 import * as cheerio from "cheerio";
 
@@ -8,7 +7,7 @@ import * as cheerio from "cheerio";
  * @param {string[]} htmlFiles - Archivos HTML/EJS
  * @param {string[]} cssFiles - Archivos CSS
  */
-export async function analyzeProject(htmlFiles, cssFiles) {
+export async function analyze(htmlFiles, cssFiles) {
   const usedClasses = new Set();
   const definedClasses = new Set();
   const deprecatedTags = ["strike", "font", "center", "u", "big", "tt"];
