@@ -1,49 +1,58 @@
 import fs from "fs";
 import path from "path";
 import postcss from "postcss";
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 
-export async function analyzeProject() {
-  const cssFiles = getFiles("./", ".css");
-  const htmlFiles = getFiles("./", ".html").concat(getFiles("./", ".ejs"));
+/**
+ * Analiza clases CSS no usadas y etiquetas HTML obsoletas
+ * @param {string[]} htmlFiles - Archivos HTML/EJS
+ * @param {string[]} cssFiles - Archivos CSS
+ */
+export async function analyzeProject(htmlFiles, cssFiles) {
+  const usedClasses = new Set();
+  const definedClasses = new Set();
+  const deprecatedTags = ["strike", "font", "center", "u", "big", "tt"];
+  const foundDeprecatedTags = new Set();
 
-  let usedClasses = new Set();
-
+  // Analizar HTML
   htmlFiles.forEach(file => {
     const content = fs.readFileSync(file, "utf8");
     const $ = cheerio.load(content);
-    $("[class]").each((_, el) => {
-      $(el).attr("class").split(/\s+/).forEach(c => usedClasses.add(c));
+
+    // Clases usadas
+    $("[class]").each((_, el) =>
+      $(el)
+        .attr("class")
+        .split(/\s+/)
+        .forEach(c => usedClasses.add(c))
+    );
+
+    // Etiquetas obsoletas
+    deprecatedTags.forEach(tag => {
+      if ($(tag).length > 0) foundDeprecatedTags.add(tag);
     });
   });
 
-  let unused = [];
+  // Analizar CSS
   cssFiles.forEach(file => {
-    const css = fs.readFileSync(file, "utf8");
-    postcss.parse(css).walkRules(rule => {
+    const content = fs.readFileSync(file, "utf8");
+    const root = postcss.parse(content);
+
+    root.walkRules(rule => {
       rule.selectors.forEach(sel => {
-        if (sel.startsWith(".")) {
-          const cls = sel.slice(1);
-          if (!usedClasses.has(cls)) {
-            unused.push({ file, selector: sel });
-          }
-        }
+        const matches = sel.match(/\.[\w-]+/g);
+        if (matches) matches.forEach(c => definedClasses.add(c.slice(1)));
       });
     });
   });
 
-  return { unused, used: [...usedClasses] };
-}
+  // Clases definidas en CSS pero no usadas
+  const unusedClasses = Array.from(definedClasses).filter(
+    c => !usedClasses.has(c)
+  );
 
-function getFiles(dir, ext) {
-  let files = [];
-  fs.readdirSync(dir).forEach(f => {
-    const full = path.join(dir, f);
-    if (fs.statSync(full).isDirectory()) {
-      files = files.concat(getFiles(full, ext));
-    } else if (f.endsWith(ext)) {
-      files.push(full);
-    }
-  });
-  return files;
+  return {
+    unusedClasses,
+    deprecatedTags: Array.from(foundDeprecatedTags),
+  };
 }
