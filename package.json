@@ -1,6 +1,6 @@
 {
   "name": "deadwatcher",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Vigilante de código muerto en tiempo real (CSS, JS, assets) con dashboard y soporte CI/CD.",
   "type": "module",
   "main": "src/index.js",
