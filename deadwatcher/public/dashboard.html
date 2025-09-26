@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DeadWatcher Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>DeadWatcher Dashboard</h1>
+  <canvas id="chart"></canvas>
+
+  <script>
+    async function loadData() {
+      const res = await fetch("/data");
+      const data = await res.json();
+
+      const ctx = document.getElementById("chart");
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Usadas", "Obsoletas"],
+          datasets: [{
+            data: [data.used?.length || 0, data.unused?.length || 0],
+            backgroundColor: ["#36a2eb", "#ff6384"]
+          }]
+        }
+      });
+    }
+    loadData();
+  </script>
+</body>
+</html>
