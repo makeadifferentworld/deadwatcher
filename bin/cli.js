@@ -1,39 +1,44 @@
 #!/usr/bin/env node
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { analyze } from "../src/analyzer.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const args = process.argv.slice(2);
 
-function getAllFiles(dir, extList, files = []) {
-  if (!fs.existsSync(dir)) return files;
+// separar flags y paths
+const flags = args.filter(a => a.startsWith("--"));
+const target = args.find(a => !a.startsWith("--")) || process.cwd();
 
-  const items = fs.readdirSync(dir);
-  for (const item of items) {
-    const fullPath = path.join(dir, item);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      getAllFiles(fullPath, extList, files);
-    } else if (extList.includes(path.extname(fullPath))) {
-      files.push(fullPath);
+function getFilesRecursively(dir, exts, ignore = []) {
+  let results = [];
+  if (!fs.existsSync(dir)) return results;
+
+  const list = fs.readdirSync(dir, { withFileTypes: true });
+
+  list.forEach(file => {
+    const fullPath = path.join(dir, file.name);
+
+    // ignorar node_modules y bootstrap
+    if (ignore.some(i => fullPath.includes(i))) return;
+
+    if (file.isDirectory()) {
+      results = results.concat(getFilesRecursively(fullPath, exts, ignore));
+    } else if (exts.includes(path.extname(file.name))) {
+      results.push(fullPath);
     }
-  }
-  return files;
+  });
+
+  return results;
 }
 
-async function main() {
-  // 🎯 Leer argumento del usuario o usar `.` por defecto
-  const targetDir = process.argv[2] || process.cwd();
+async function runAnalysis() {
+  console.log(`🔍 Analizando: ${target}`);
 
-  console.log(`🔍 Analizando: ${targetDir}`);
-
-  const htmlFiles = getAllFiles(targetDir, [".html", ".ejs"]);
-  const cssFiles = getAllFiles(targetDir, [".css"]);
+  const htmlFiles = getFilesRecursively(target, [".html", ".ejs"], ["node_modules"]);
+  const cssFiles = getFilesRecursively(target, [".css"], ["node_modules", "bootstrap"]);
 
   if (htmlFiles.length === 0 && cssFiles.length === 0) {
-    console.log("⚠️ No se encontraron archivos HTML/EJS o CSS.");
+    console.warn("⚠️ No se encontraron archivos HTML/EJS o CSS.");
     return;
   }
 
@@ -43,4 +48,12 @@ async function main() {
   console.log("Etiquetas HTML obsoletas:", results.deprecatedTags);
 }
 
-main();
+// manejar flags
+if (flags.includes("--once")) {
+  runAnalysis();
+} else if (flags.includes("--dashboard")) {
+  console.log("🚀 Dashboard aún no implementado (WIP)");
+  runAnalysis();
+} else {
+  runAnalysis();
+}

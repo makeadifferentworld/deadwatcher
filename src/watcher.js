@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import { analyzeProject } from "./analyzer.js";
+import { analyze } from "./analyzer.js";
 import { reportResults } from "./reporter.js";
 
 export function startWatcher({ once = false }) {
@@ -17,6 +17,6 @@ export function startWatcher({ once = false }) {
 }
 
 async function analyzeAndReport() {
-  const results = await analyzeProject();
+  const results = await analyze();
   reportResults(results);
 }
