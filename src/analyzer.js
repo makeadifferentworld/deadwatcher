@@ -1,5 +1,6 @@
 import fs from "fs";
 import postcss from "postcss";
+import safeParser from "postcss-safe-parser";
 import * as cheerio from "cheerio";
 
 /**
@@ -13,12 +14,10 @@ export async function analyze(htmlFiles, cssFiles) {
   const deprecatedTags = ["strike", "font", "center", "u", "big", "tt"];
   const foundDeprecatedTags = new Set();
 
-  // Analizar HTML
   htmlFiles.forEach(file => {
     const content = fs.readFileSync(file, "utf8");
     const $ = cheerio.load(content);
 
-    // Clases usadas
     $("[class]").each((_, el) =>
       $(el)
         .attr("class")
@@ -26,26 +25,27 @@ export async function analyze(htmlFiles, cssFiles) {
         .forEach(c => usedClasses.add(c))
     );
 
-    // Etiquetas obsoletas
     deprecatedTags.forEach(tag => {
       if ($(tag).length > 0) foundDeprecatedTags.add(tag);
     });
   });
 
-  // Analizar CSS
   cssFiles.forEach(file => {
     const content = fs.readFileSync(file, "utf8");
-    const root = postcss.parse(content);
+    try {
+      const root = postcss().process(content, { parser: safeParser }).root;
 
-    root.walkRules(rule => {
-      rule.selectors.forEach(sel => {
-        const matches = sel.match(/\.[\w-]+/g);
-        if (matches) matches.forEach(c => definedClasses.add(c.slice(1)));
+      root.walkRules(rule => {
+        rule.selectors.forEach(sel => {
+          const matches = sel.match(/\.[\w-]+/g);
+          if (matches) matches.forEach(c => definedClasses.add(c.slice(1)));
+        });
       });
-    });
+    } catch (err) {
+      console.warn(`⚠️ Error analizando ${file}: ${err.reason || err.message}`);
+    }
   });
 
-  // Clases definidas en CSS pero no usadas
   const unusedClasses = Array.from(definedClasses).filter(
     c => !usedClasses.has(c)
   );

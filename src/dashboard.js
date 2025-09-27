@@ -1,15 +1,31 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import open from "open";
 
-let lastResults = {};
+let lastResults = { unusedClasses: [], deprecatedTags: [] };
 
 export function startDashboard() {
   const app = express();
-  app.use(express.static("public"));
 
-  app.get("/data", (req, res) => res.json(lastResults));
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const publicPath = path.join(__dirname, "../public");
 
-  app.listen(3001, () => {
-    console.log("📊 Dashboard en http://localhost:3001");
+  app.use(express.static(publicPath));
+
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(publicPath, "dashboard.html"));
+  });
+
+  app.get("/data", (req, res) => {
+    res.json(lastResults);
+  });
+
+  const port = 3001;
+  app.listen(port, () => {
+    console.log(`📊 Dashboard disponible en http://localhost:${port}`);
+    open(`http://localhost:${port}`);
   });
 }
 

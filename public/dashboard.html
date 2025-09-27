@@ -1,30 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+  <meta charset="UTF-8">
   <title>DeadWatcher Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+    #lists {
+      display: flex;
+      gap: 40px;
+      margin-top: 20px;
+    }
+    ul {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      flex: 1;
+    }
+    canvas {
+      max-width: 400px;
+      margin: 20px auto;
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <h1>DeadWatcher Dashboard</h1>
   <canvas id="chart"></canvas>
+  <div id="lists">
+    <ul id="unused-list">
+      <h3>Clases CSS no usadas</h3>
+    </ul>
+    <ul id="deprecated-list">
+      <h3>Etiquetas obsoletas</h3>
+    </ul>
+  </div>
 
   <script>
+    let chartInstance = null;
+
     async function loadData() {
       const res = await fetch("/data");
       const data = await res.json();
 
       const ctx = document.getElementById("chart");
-      new Chart(ctx, {
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
         type: "doughnut",
         data: {
-          labels: ["Usadas", "Obsoletas"],
+          labels: ["No usadas", "Etiquetas obsoletas"],
           datasets: [{
-            data: [data.used?.length || 0, data.unused?.length || 0],
-            backgroundColor: ["#36a2eb", "#ff6384"]
+            data: [
+              data.unusedClasses?.length || 0,
+              data.deprecatedTags?.length || 0
+            ],
+            backgroundColor: ["#ff6384", "#ffce56"]
           }]
+        },
+        options: {
+          responsive: true
         }
       });
+
+      const unusedList = document.getElementById("unused-list");
+      unusedList.innerHTML = "<h3>Clases CSS no usadas</h3>";
+      (data.unusedClasses || []).forEach(c => {
+        unusedList.innerHTML += `<li>${c}</li>`;
+      });
+
+      const deprecatedList = document.getElementById("deprecated-list");
+      deprecatedList.innerHTML = "<h3>Etiquetas obsoletas</h3>";
+      (data.deprecatedTags || []).forEach(t => {
+        deprecatedList.innerHTML += `<li>${t}</li>`;
+      });
     }
+
+    setInterval(loadData, 5000);
     loadData();
   </script>
 </body>
