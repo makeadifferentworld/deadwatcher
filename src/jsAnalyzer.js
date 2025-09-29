@@ -3,21 +3,14 @@ import path from "path";
 import { ESLint } from "eslint";
 import { parse } from "acorn";
 import * as walk from "acorn-walk";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 function createESLintInstance() {
   const projectConfigPath = path.join(process.cwd(), 'config', 'eslint.config.js');
-  const internalConfigPath = path.join(__dirname, 'config', 'eslint.config.js');
 
   const eslintOptions = {};
 
   if (fs.existsSync(projectConfigPath)) {
     eslintOptions.overrideConfigFile = projectConfigPath;
-  } else if (fs.existsSync(internalConfigPath)) {
-    eslintOptions.overrideConfigFile = internalConfigPath;
   } else {
     eslintOptions.overrideConfig = {
       languageOptions: {
@@ -43,7 +36,7 @@ function createESLintInstance() {
         "no-console": "off",
         "no-var": "error",
         "prefer-const": "warn",
-        "eqeqeq": "warn",
+        eqeqeq: "warn",
         "no-with": "error",
         "no-new-object": "warn",
         "prefer-arrow-callback": "warn"
