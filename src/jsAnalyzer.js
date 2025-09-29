@@ -10,6 +10,19 @@ const __dirname = path.dirname(__filename);
 
 const internalConfigPath = path.join(__dirname, "../eslint.config.js");
 
+// Lista de variables que siempre consideramos definidas para evitar falsos positivos
+const allowedGlobals = new Set([
+  "console",
+  "process",
+  "require",
+  "module",
+  "__dirname",
+  "window",
+  "document",
+  "test",
+  "expect",
+]);
+
 function createESLintInstance() {
   const eslintOptions = {};
 
@@ -22,17 +35,7 @@ function createESLintInstance() {
           ecmaVersion: "latest",
           sourceType: "module",
         },
-        globals: {
-          console: "readonly",
-          process: "readonly",
-          require: "readonly",
-          module: "readonly",
-          __dirname: "readonly",
-          window: "readonly",
-          document: "readonly",
-          test: "readonly",
-          expect: "readonly",
-        },
+        globals: Object.fromEntries([...allowedGlobals].map(g => [g, "readonly"])),
       },
       rules: {
         "no-unused-vars": "warn",
@@ -61,17 +64,26 @@ export async function analyzeJS(jsFiles) {
   for (const file of jsFiles) {
     const code = fs.readFileSync(file, "utf8");
 
+    // Lint con ESLint
     try {
       const result = await eslint.lintText(code, { filePath: file });
       result.forEach((r) =>
         lintResults.push(
-          ...r.messages.map((m) => ({
-            file,
-            line: m.line,
-            message: m.message,
-            ruleId: m.ruleId,
-            severity: m.severity,
-          }))
+          ...r.messages
+            // Filtrar falsos positivos de variables globales permitidas
+            .filter(m => {
+              if (m.ruleId === "no-undef" && allowedGlobals.has(m.message.match(/'(\w+)'/)?.[1])) {
+                return false;
+              }
+              return true;
+            })
+            .map((m) => ({
+              file,
+              line: m.line,
+              message: m.message,
+              ruleId: m.ruleId,
+              severity: m.severity,
+            }))
         )
       );
     } catch (e) {
@@ -84,6 +96,7 @@ export async function analyzeJS(jsFiles) {
       });
     }
 
+    // Analizar funciones sin uso
     try {
       const ast = parse(code, { ecmaVersion: "latest", sourceType: "module" });
       walk.simple(ast, {

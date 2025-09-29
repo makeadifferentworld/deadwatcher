@@ -7,7 +7,7 @@ export default [
     languageOptions: {
       parserOptions: {
         ecmaVersion: "latest",
-        sourceType: "module"
+        sourceType: "module",
       },
       globals: {
         console: "readonly",
@@ -15,8 +15,8 @@ export default [
         document: "readonly",
         process: "readonly",
         test: "readonly",
-        expect: "readonly"
-      }
+        expect: "readonly",
+      },
     },
     rules: {
       "no-unused-vars": "warn",
@@ -27,7 +27,7 @@ export default [
       "eqeqeq": "warn",
       "no-with": "error",
       "no-new-object": "warn",
-      "prefer-arrow-callback": "warn"
-    }
-  }
+      "prefer-arrow-callback": "warn",
+    },
+  },
 ];
