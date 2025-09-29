@@ -3,20 +3,24 @@ import path from "path";
 import { ESLint } from "eslint";
 import { parse } from "acorn";
 import * as walk from "acorn-walk";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const internalConfigPath = path.join(__dirname, "../eslint.config.js");
 
 function createESLintInstance() {
-  const projectConfigPath = path.join(process.cwd(), 'config', 'eslint.config.js');
-
   const eslintOptions = {};
 
-  if (fs.existsSync(projectConfigPath)) {
-    eslintOptions.overrideConfigFile = projectConfigPath;
+  if (fs.existsSync(internalConfigPath)) {
+    eslintOptions.overrideConfigFile = internalConfigPath;
   } else {
     eslintOptions.overrideConfig = {
       languageOptions: {
         parserOptions: {
           ecmaVersion: "latest",
-          sourceType: "module"
+          sourceType: "module",
         },
         globals: {
           console: "readonly",
@@ -27,8 +31,8 @@ function createESLintInstance() {
           window: "readonly",
           document: "readonly",
           test: "readonly",
-          expect: "readonly"
-        }
+          expect: "readonly",
+        },
       },
       rules: {
         "no-unused-vars": "warn",
@@ -39,8 +43,8 @@ function createESLintInstance() {
         eqeqeq: "warn",
         "no-with": "error",
         "no-new-object": "warn",
-        "prefer-arrow-callback": "warn"
-      }
+        "prefer-arrow-callback": "warn",
+      },
     };
   }
 
@@ -59,14 +63,14 @@ export async function analyzeJS(jsFiles) {
 
     try {
       const result = await eslint.lintText(code, { filePath: file });
-      result.forEach(r =>
+      result.forEach((r) =>
         lintResults.push(
-          ...r.messages.map(m => ({
+          ...r.messages.map((m) => ({
             file,
             line: m.line,
             message: m.message,
             ruleId: m.ruleId,
-            severity: m.severity
+            severity: m.severity,
           }))
         )
       );
@@ -76,7 +80,7 @@ export async function analyzeJS(jsFiles) {
         line: 0,
         message: `Error al lint: ${e.message}`,
         ruleId: "lint-error",
-        severity: 2
+        severity: 2,
       });
     }
 
@@ -88,7 +92,7 @@ export async function analyzeJS(jsFiles) {
         },
         Identifier(node) {
           allRefs.add(node.name);
-        }
+        },
       });
     } catch (e) {
       lintResults.push({
@@ -96,7 +100,7 @@ export async function analyzeJS(jsFiles) {
         line: 0,
         message: "Error de sintaxis",
         ruleId: "parse-error",
-        severity: 2
+        severity: 2,
       });
     }
   }
