@@ -6,8 +6,8 @@ import * as walk from "acorn-walk";
 
 export async function analyzeJS(jsFiles) {
     const eslint = new ESLint({
-        overrideConfigFile: path.resolve(process.cwd(), "eslint.config.js")
-    });
+        overrideConfigFile: path.resolve(import.meta.url.replace("file://", ""), "../../eslint.config.js")
+      });      
 
     const lintResults = [];
     const allDecl = new Map();
