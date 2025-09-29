@@ -6,8 +6,35 @@ import * as walk from "acorn-walk";
 
 export async function analyzeJS(jsFiles) {
     const eslint = new ESLint({
-        overrideConfigFile: path.resolve(import.meta.url.replace("file://", ""), "../../eslint.config.js")
-      });      
+        overrideConfig: [
+          {
+            files: ["**/*.js"],
+            languageOptions: {
+              ecmaVersion: "latest",
+              sourceType: "module",
+              globals: {
+                console: "readonly",
+                window: "readonly",
+                document: "readonly",
+                process: "readonly",
+                test: "readonly",
+                expect: "readonly"
+              }
+            },
+            rules: {
+              "no-unused-vars": "warn",
+              "no-undef": "error",
+              "no-console": "off",
+              "no-var": "error",
+              "prefer-const": "warn",
+              "eqeqeq": "warn",
+              "no-with": "error",
+              "no-new-object": "warn",
+              "prefer-arrow-callback": "warn"
+            }
+          }
+        ]
+      });           
 
     const lintResults = [];
     const allDecl = new Map();
