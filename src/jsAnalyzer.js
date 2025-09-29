@@ -5,21 +5,30 @@ import { parse } from "acorn";
 import * as walk from "acorn-walk";
 
 function createESLintInstance() {
-  return new ESLint({
-    useEslintrc: false,      
-    overrideConfigFile: null, 
-    overrideConfig: {        
-      env: { node: true, es2021: true },
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module"
-      },
-      globals: {
-        console: "readonly",
-        process: "readonly",
-        require: "readonly",
-        module: "readonly",
-        __dirname: "readonly"
+  const projectConfigPath = path.join(process.cwd(), 'config', 'eslint.config.js');
+
+  const eslintOptions = {};
+
+  if (fs.existsSync(projectConfigPath)) {
+    eslintOptions.overrideConfigFile = projectConfigPath;
+  } else {
+    eslintOptions.overrideConfig = {
+      languageOptions: {
+        parserOptions: {
+          ecmaVersion: "latest",
+          sourceType: "module"
+        },
+        globals: {
+          console: "readonly",
+          process: "readonly",
+          require: "readonly",
+          module: "readonly",
+          __dirname: "readonly",
+          window: "readonly",
+          document: "readonly",
+          test: "readonly",
+          expect: "readonly"
+        }
       },
       rules: {
         "no-unused-vars": "warn",
@@ -32,8 +41,10 @@ function createESLintInstance() {
         "no-new-object": "warn",
         "prefer-arrow-callback": "warn"
       }
-    }
-  });
+    };
+  }
+
+  return new ESLint(eslintOptions);
 }
 
 export async function analyzeJS(jsFiles) {
