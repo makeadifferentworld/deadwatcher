@@ -1,5 +1,6 @@
 import chokidar from "chokidar";
 import { analyze } from "./analyzer.js";
+import { analyzeJS } from "./jsAnalyzer.js";
 import { reportResults } from "./reporter.js";
 import { updateDashboard } from "./dashboard.js";
 import fs from "fs";
@@ -12,9 +13,7 @@ function getFilesRecursively(dir, exts, ignore = []) {
   const list = fs.readdirSync(dir, { withFileTypes: true });
   list.forEach(file => {
     const fullPath = path.join(dir, file.name);
-
     if (ignore.some(i => fullPath.includes(i))) return;
-
     if (file.isDirectory()) {
       results = results.concat(getFilesRecursively(fullPath, exts, ignore));
     } else if (exts.includes(path.extname(file.name))) {
@@ -29,14 +28,23 @@ export function startWatcher({ once = false }) {
   const target = process.cwd();
   const htmlFiles = getFilesRecursively(target, [".html", ".ejs"], ["node_modules"]);
   const cssFiles = getFilesRecursively(target, [".css"], ["node_modules", "bootstrap"]);
+  const jsFiles = getFilesRecursively(target, [".js"], ["node_modules"]);
 
   async function analyzeAndReport() {
     try {
-      const results = await analyze(htmlFiles, cssFiles);
+      const cssHtmlResults = await analyze(htmlFiles, cssFiles);
+      const jsResults = await analyzeJS(jsFiles);
+
+      const results = {
+        ...cssHtmlResults,
+        jsErrors: jsResults.lintResults,
+        jsUnused: jsResults.unusedFuncs
+      };
+
       reportResults(results);
       updateDashboard(results);
     } catch (err) {
-      console.warn("⚠️ Error durante el análisis (esperando cambios válidos):", err.message);
+      console.warn("⚠️ Error durante el análisis:", err.message);
     }
   }
 
@@ -46,7 +54,7 @@ export function startWatcher({ once = false }) {
   }
 
   const watcher = chokidar.watch(
-    ["./**/*.html", "./**/*.ejs", "./**/*.css"],
+    ["./**/*.html", "./**/*.ejs", "./**/*.css", "./**/*.js"],
     { ignored: /node_modules/ }
   );
 

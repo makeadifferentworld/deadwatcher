@@ -1,96 +1,352 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>DeadWatcher Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      margin: 20px;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      color: #222;
-    }
-    #lists {
-      display: flex;
-      gap: 40px;
-      margin-top: 20px;
-    }
-    ul {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      flex: 1;
-    }
-    canvas {
-      max-width: 400px;
-      margin: 20px auto;
-      display: block;
-    }
+  margin: 0;
+  padding: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  background: #000;
+  color: #0f0;
+  position: relative;
+}
+
+canvas#matrix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+#content {
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  color: #0f0;
+  text-shadow: 0 0 8px #0f0, 0 0 15px #00ffaa;
+  margin-bottom: 10px;
+  margin-top: 0px;
+}
+
+#dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  align-items: start;
+}
+
+/* Cards */
+#cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.card {
+  background: #010101;
+  border: 1px solid #0f0;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 0 8px #00ffaa;
+  animation: glow 2s infinite alternate;
+  min-height: 60px;
+}
+
+.card h3 {
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+  text-shadow: 0 0 5px #0f0;
+}
+
+.card .count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 0 5px #0f0, 0 0 15px #00ffaa;
+  /*animation: glitch 1.5s infinite;*/
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 5px #00ffaa; }
+  to { box-shadow: 0 0 15px #0f0; }
+}
+
+@keyframes glitch {
+  0% { text-shadow: 1px 0 #0f0, -1px 0 #00ffaa; }
+  20% { text-shadow: -2px 0 #0f0, 2px 0 #00ffaa; }
+  40% { text-shadow: 2px 2px #00ffaa, -2px -2px #0f0; }
+  60% { text-shadow: -1px 1 #0f0, 1px -1px #00ffaa; }
+  80% { text-shadow: 1px -1px #00ffaa, -1px 1px #0f0; }
+  100% { text-shadow: 1px 1px #0f0, -1px -1px #00ffaa; }
+}
+
+/* Lists */
+#lists {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
+}
+
+ul {
+  list-style: none;
+  padding: 8px;
+  border: 1px solid #0f0;
+  border-radius: 6px;
+  background: #010101;
+  font-size: 0.85rem;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+ul h3 {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #0f0;
+}
+
+ul li {
+  padding: 2px 4px;
+  border-left: 3px solid transparent;
+  margin-bottom: 1px;
+  word-break: break-word;
+  animation: typing 0.5s ease forwards;
+}
+
+#unused-list li { border-left-color: #0ff; }
+#deprecated-list li { border-left-color: #ff0; }
+#js-errors li { border-left-color: #f0f; }
+#js-unused li { border-left-color: #ff8c00; }
+
+@keyframes typing {
+  0% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Chart */
+#chart-container {
+  background: #010101;
+  padding: 15px;
+  border: 1px solid #0f0;
+  border-radius: 8px;
+  box-shadow: 0 0 10px #00ffaa;
+  max-width: 730px;
+  width: 90%;
+  height: 730px;
+  margin: 0 auto;
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: #0f04;
+  color: #0f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.6s ease;
+  z-index: 999;
+  text-shadow: 0 0 6px #0f0;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media(max-width:900px){
+  #dashboard { grid-template-columns: 1fr; }
+  #cards { grid-template-columns: 1fr 1fr; }
+  #chart-container { margin-top: 15px; }
+}
+
   </style>
 </head>
+
 <body>
-  <h1>DeadWatcher Dashboard</h1>
-  <canvas id="chart"></canvas>
-  <div id="lists">
-    <ul id="unused-list">
-      <h3>Clases CSS no usadas</h3>
-    </ul>
-    <ul id="deprecated-list">
-      <h3>Etiquetas obsoletas</h3>
-    </ul>
+
+  <canvas id="matrix"></canvas>
+
+  <div id="content">
+    <h1>DeadWatcher Dashboard</h1>
+
+    <div id="dashboard">
+      <div>
+        <div id="cards">
+          <div class="card">
+            <h3>Clases CSS</h3>
+            <div class="count" id="count-css">0</div>
+          </div>
+          <div class="card">
+            <h3>Etiquetas obsoletas</h3>
+            <div class="count" id="count-tags">0</div>
+          </div>
+          <div class="card">
+            <h3>Errores JS</h3>
+            <div class="count" id="count-js">0</div>
+          </div>
+          <div class="card">
+            <h3>Funciones JS sin uso</h3>
+            <div class="count" id="count-unused">0</div>
+          </div>
+        </div>
+
+        <div id="lists">
+          <ul id="unused-list">
+            <h3>Clases CSS no usadas</h3>
+          </ul>
+          <ul id="deprecated-list">
+            <h3>Etiquetas obsoletas</h3>
+          </ul>
+          <ul id="js-errors">
+            <h3>Errores de JS</h3>
+          </ul>
+          <ul id="js-unused">
+            <h3>Funciones JS sin uso</h3>
+          </ul>
+        </div>
+      </div>
+
+      <div id="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
   </div>
 
   <script>
+    // ---- Matrix background ----
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%'.split('');
+    const fontSize = 14;
+    let columns = Math.floor(W / fontSize);
+    let drops = Array(columns).fill(0);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#0f0';
+      ctx.font = fontSize + 'px Share Tech Mono';
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        drops[i]++;
+        if (drops[i] * fontSize > H && Math.random() > 0.975) drops[i] = 0;
+      }
+    }
+    setInterval(drawMatrix, 50);
+    window.addEventListener('resize', () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      columns = Math.floor(W / fontSize);
+      drops = Array(columns).fill(0);
+    });
+
+    // ---- Dashboard logic ----
     let chartInstance = null;
 
-    async function loadData() {
-      const res = await fetch("/data");
-      const data = await res.json();
-
-      const ctx = document.getElementById("chart");
-
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      chartInstance = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: ["No usadas", "Etiquetas obsoletas"],
-          datasets: [{
-            data: [
-              data.unusedClasses?.length || 0,
-              data.deprecatedTags?.length || 0
-            ],
-            backgroundColor: ["#ff6384", "#ffce56"]
-          }]
-        },
-        options: {
-          responsive: true
-        }
-      });
-
-      const unusedList = document.getElementById("unused-list");
-      unusedList.innerHTML = "<h3>Clases CSS no usadas</h3>";
-      (data.unusedClasses || []).forEach(c => {
-        unusedList.innerHTML += `<li>${c}</li>`;
-      });
-
-      const deprecatedList = document.getElementById("deprecated-list");
-      deprecatedList.innerHTML = "<h3>Etiquetas obsoletas</h3>";
-      (data.deprecatedTags || []).forEach(t => {
-        deprecatedList.innerHTML += `<li>${t}</li>`;
-      });
+    function animateCount(el, value) {
+      const current = parseInt(el.textContent) || 0;
+      const step = Math.ceil(Math.abs(value - current) / 10) || 1;
+      let i = current;
+      const interval = setInterval(() => {
+        if (i < value) i += step;
+        else if (i > value) i -= step;
+        else { i = value; clearInterval(interval); }
+        el.textContent = i;
+      }, 50);
     }
 
-    setInterval(loadData, 5000);
+    function showNotification(msg) {
+      const notif = document.getElementById("notification");
+      notif.textContent = msg;
+      notif.classList.add("show");
+      setTimeout(() => notif.classList.remove("show"), 3000);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/data");
+        const data = await res.json();
+
+        animateCount(document.getElementById("count-css"), data.unusedClasses?.length || 0);
+        animateCount(document.getElementById("count-tags"), data.deprecatedTags?.length || 0);
+        animateCount(document.getElementById("count-js"), data.jsErrors?.length || 0);
+        animateCount(document.getElementById("count-unused"), data.jsUnused?.length || 0);
+
+        const ctxChart = document.getElementById("chart");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctxChart, {
+          type: 'doughnut',
+          data: {
+            labels: ["CSS", "Etiquetas", "Errores JS", "Funciones JS"],
+            datasets: [{
+              data: [
+                data.unusedClasses?.length || 0,
+                data.deprecatedTags?.length || 0,
+                data.jsErrors?.length || 0,
+                data.jsUnused?.length || 0
+              ],
+              backgroundColor: ["#0ff", "#ff0", "#f0f", "#ff8c00"],
+              hoverOffset: 15,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#0f0' } }, tooltip: { bodyFont: { size: 12 }, titleFont: { size: 14 } } },
+            animation: { duration: 1000 }
+          }
+        });
+
+        const lists = [
+          { id: "unused-list", items: data.unusedClasses || [] },
+          { id: "deprecated-list", items: data.deprecatedTags || [] },
+          { id: "js-errors", items: data.jsErrors || [], template: e => `${e.file}:${e.line} - ${e.message} (${e.ruleId})` },
+          { id: "js-unused", items: data.jsUnused || [], template: fn => `${fn.name} (${fn.file})` }
+        ];
+
+        lists.forEach(list => {
+          const ul = document.getElementById(list.id);
+          const header = ul.querySelector("h3").textContent;
+          ul.innerHTML = `<h3>${header}</h3>`;
+          if (list.items.length === 0) {
+            ul.innerHTML += `<li>No hay elementos</li>`;
+          } else {
+            list.items.forEach(item => {
+              const text = list.template ? list.template(item) : item;
+              ul.innerHTML += `<li>${text}</li>`;
+            });
+          }
+        });
+      } catch (err) {
+        showNotification('Error cargando datos');
+        console.error(err);
+      }
+    }
+
+    setInterval(loadData, 10000);
     loadData();
   </script>
 </body>
+
 </html>
