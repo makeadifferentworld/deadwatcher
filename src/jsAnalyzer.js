@@ -4,13 +4,20 @@ import { ESLint } from "eslint";
 import { parse } from "acorn";
 import * as walk from "acorn-walk";
 
+function getInternalESLintConfigPath() {
+  return path.join(new URL('.', import.meta.url).pathname, 'config', 'eslint.config.js');
+}
+
 function createESLintInstance() {
   const projectConfigPath = path.join(process.cwd(), 'config', 'eslint.config.js');
+  const internalConfigPath = getInternalESLintConfigPath();
 
   const eslintOptions = {};
 
   if (fs.existsSync(projectConfigPath)) {
     eslintOptions.overrideConfigFile = projectConfigPath;
+  } else if (fs.existsSync(internalConfigPath)) {
+    eslintOptions.overrideConfigFile = internalConfigPath;
   } else {
     eslintOptions.overrideConfig = {
       languageOptions: {
