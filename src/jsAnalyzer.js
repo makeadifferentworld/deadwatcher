@@ -3,14 +3,14 @@ import path from "path";
 import { ESLint } from "eslint";
 import { parse } from "acorn";
 import * as walk from "acorn-walk";
+import { fileURLToPath } from "url";
 
-function getInternalESLintConfigPath() {
-  return path.join(new URL('.', import.meta.url).pathname, 'config', 'eslint.config.js');
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function createESLintInstance() {
   const projectConfigPath = path.join(process.cwd(), 'config', 'eslint.config.js');
-  const internalConfigPath = getInternalESLintConfigPath();
+  const internalConfigPath = path.join(__dirname, 'config', 'eslint.config.js');
 
   const eslintOptions = {};
 
