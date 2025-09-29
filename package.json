@@ -46,5 +46,10 @@
   },
   "jest": {
     "testEnvironment": "node"
-  }
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "eslint.config.js"
+  ]
 }
