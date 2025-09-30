@@ -46,6 +46,7 @@
   "files": [
     "bin/",
     "src/",
+    "public/",
     "eslint.config.js"
   ],
   "jest": {
