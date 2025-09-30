@@ -16,6 +16,8 @@ export default [
         process: "readonly",
         test: "readonly",
         expect: "readonly",
+        $: "readonly",
+        jQuery: "readonly",
       },
     },
     rules: {
