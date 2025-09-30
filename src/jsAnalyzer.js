@@ -20,6 +20,13 @@ const allowedGlobals = new Set([
   "document",
   "test",
   "expect",
+  "$",
+  "URLSearchParams",
+  "setTimeout",
+  "MercadoPago",
+  "alert",
+  "URL",
+  "setInterval",
 ]);
 
 function createESLintInstance() {
