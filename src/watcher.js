@@ -54,9 +54,12 @@ export function startWatcher({ once = false }) {
   }
 
   const watcher = chokidar.watch(
-    ["./**/*.html", "./**/*.ejs", "./**/*.css", "./**/*.js"],
-    { ignored: /node_modules/ }
-  );
+    ["./src/**/*.html", "./src/**/*.ejs", "./src/**/*.css", "./src/**/*.js"],
+    {
+      ignored: /(node_modules|\.git|dist|build|coverage|logs)/,
+      ignoreInitial: true
+    }
+  );  
 
   watcher.on("ready", () => {
     console.log("👀 Vigilando cambios...");
