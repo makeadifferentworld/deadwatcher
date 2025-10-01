@@ -62,7 +62,8 @@ function createESLintInstance() {
 export async function analyzeJS(jsFiles) {
   const eslint = createESLintInstance();
 
-  const lintResults = [];
+  const lintErrors = [];
+  const lintWarnings = [];
   const allDecl = new Map();
   const allRefs = new Set();
 
@@ -72,25 +73,28 @@ export async function analyzeJS(jsFiles) {
     try {
       const result = await eslint.lintText(code, { filePath: file });
       result.forEach((r) =>
-        lintResults.push(
-          ...r.messages
-            .filter(m => {
-              if (m.ruleId === "no-undef" && allowedGlobals.has(m.message.match(/'(\w+)'/)?.[1])) {
-                return false;
-              }
-              return true;
-            })
-            .map((m) => ({
-              file,
-              line: m.line,
-              message: m.message,
-              ruleId: m.ruleId,
-              severity: m.severity,
-            }))
-        )
+        r.messages.forEach((m) => {
+          if (m.ruleId === "no-undef" && allowedGlobals.has(m.message.match(/'(\w+)'/)?.[1])) {
+            return;
+          }
+
+          const entry = {
+            file,
+            line: m.line,
+            message: m.message,
+            ruleId: m.ruleId,
+            severity: m.severity,
+          };
+
+          if (m.severity === 1) {
+            lintWarnings.push(entry);
+          } else {
+            lintErrors.push(entry);
+          }
+        })
       );
     } catch (e) {
-      lintResults.push({
+      lintErrors.push({
         file,
         line: 0,
         message: `Error al lint: ${e.message}`,
@@ -110,7 +114,7 @@ export async function analyzeJS(jsFiles) {
         },
       });
     } catch (e) {
-      lintResults.push({
+      lintErrors.push({
         file,
         line: 0,
         message: "Error de sintaxis",
@@ -127,5 +131,5 @@ export async function analyzeJS(jsFiles) {
     }
   }
 
-  return { lintResults, unusedFuncs };
+  return { lintErrors, lintWarnings, unusedFuncs };
 }

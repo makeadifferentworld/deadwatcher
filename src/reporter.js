@@ -29,6 +29,17 @@ export function reportResults(results) {
     });
   }
 
+  if (!results.jsWarnings?.length) {
+    console.log(chalk.blue("No se encontraron recomendaciones de JS."));
+  } else {
+    console.log(chalk.magenta("ℹ Cambios de JS recomendados:"));
+    results.jsWarnings.forEach(warn => {
+      console.log(
+        `  ${chalk.yellow(warn.file)}:${warn.line} - ${chalk.cyan(warn.message)} (${warn.ruleId})`
+      );
+    });
+  }
+
   if (!results.jsUnused?.length) {
     console.log(chalk.blue("No se encontraron funciones JS sin uso."));
   } else {
@@ -38,3 +49,4 @@ export function reportResults(results) {
     });
   }
 }
+

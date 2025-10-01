@@ -37,9 +37,10 @@ export function startWatcher({ once = false }) {
 
       const results = {
         ...cssHtmlResults,
-        jsErrors: jsResults.lintResults,
+        jsErrors: jsResults.lintErrors,
+        jsWarnings: jsResults.lintWarnings,
         jsUnused: jsResults.unusedFuncs
-      };
+      };      
 
       reportResults(results);
       updateDashboard(results);

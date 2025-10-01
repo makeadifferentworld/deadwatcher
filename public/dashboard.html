@@ -4,176 +4,169 @@
 <head>
   <meta charset="UTF-8">
   <title>DeadWatcher Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     body {
-  margin: 0;
-  padding: 20px;
-  font-family: 'Share Tech Mono', monospace;
-  background: #000;
-  color: #0f0;
-  position: relative;
-}
+      margin: 0;
+      padding: 20px;
+      font-family: 'Share Tech Mono', monospace;
+      background: #000;
+      color: #0f0;
+      position: relative;
+    }
 
-canvas#matrix {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
+    canvas#matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
 
-#content {
-  position: relative;
-  z-index: 1;
-}
+    #content {
+      position: relative;
+      z-index: 1;
+    }
 
-h1 {
-  text-align: center;
-  font-size: 2rem;
-  color: #0f0;
-  text-shadow: 0 0 8px #0f0, 0 0 15px #00ffaa;
-  margin-bottom: 10px;
-  margin-top: 0px;
-}
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      color: #0f0;
+      text-shadow: 0 0 8px #0f0, 0 0 15px #00ffaa;
+      margin-bottom: 10px;
+      margin-top: 0px;
+    }
 
-#dashboard {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  align-items: start;
-}
+    #dashboard {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      align-items: start;
+    }
 
-/* Cards */
-#cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 15px;
-}
+    #cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
 
-.card {
-  background: #010101;
-  border: 1px solid #0f0;
-  padding: 10px;
-  border-radius: 6px;
-  box-shadow: 0 0 8px #00ffaa;
-  animation: glow 2s infinite alternate;
-  min-height: 60px;
-}
+    .card {
+      background: #010101;
+      border: 1px solid #0f0;
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px #00ffaa;
+      animation: glow 2s infinite alternate;
+      min-height: 60px;
+    }
 
-.card h3 {
-  font-size: 0.9rem;
-  margin-bottom: 3px;
-  text-shadow: 0 0 5px #0f0;
-}
+    .card h3 {
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+      text-shadow: 0 0 5px #0f0;
+    }
 
-.card .count {
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-shadow: 0 0 5px #0f0, 0 0 15px #00ffaa;
-  /*animation: glitch 1.5s infinite;*/
-}
+    .card .count {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-shadow: 0 0 5px #0f0, 0 0 15px #00ffaa;
+    }
 
-@keyframes glow {
-  from { box-shadow: 0 0 5px #00ffaa; }
-  to { box-shadow: 0 0 15px #0f0; }
-}
+    @keyframes glow {
+      from {
+        box-shadow: 0 0 5px #00ffaa;
+      }
 
-@keyframes glitch {
-  0% { text-shadow: 1px 0 #0f0, -1px 0 #00ffaa; }
-  20% { text-shadow: -2px 0 #0f0, 2px 0 #00ffaa; }
-  40% { text-shadow: 2px 2px #00ffaa, -2px -2px #0f0; }
-  60% { text-shadow: -1px 1 #0f0, 1px -1px #00ffaa; }
-  80% { text-shadow: 1px -1px #00ffaa, -1px 1px #0f0; }
-  100% { text-shadow: 1px 1px #0f0, -1px -1px #00ffaa; }
-}
+      to {
+        box-shadow: 0 0 15px #0f0;
+      }
+    }
 
-/* Lists */
-#lists {
-  display: grid;
-  grid-template-rows: repeat(4, 1fr);
-  gap: 6px;
-}
+    #lists {
+      display: grid;
+      grid-template-rows: repeat(5, auto);
+      gap: 6px;
+    }
 
-ul {
-  list-style: none;
-  padding: 8px;
-  border: 1px solid #0f0;
-  border-radius: 6px;
-  background: #010101;
-  font-size: 0.85rem;
-  max-height: 120px;
-  overflow-y: auto;
-}
+    ul {
+      list-style: none;
+      padding: 8px;
+      border: 1px solid #0f0;
+      border-radius: 6px;
+      background: #010101;
+      font-size: 0.85rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
 
-ul h3 {
-  margin-bottom: 5px;
-  font-size: 0.9rem;
-  color: #0f0;
-}
+    ul h3 {
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+      color: #0f0;
+    }
 
-ul li {
-  padding: 2px 4px;
-  border-left: 3px solid transparent;
-  margin-bottom: 1px;
-  word-break: break-word;
-  animation: typing 0.5s ease forwards;
-}
+    ul li {
+      padding: 2px 4px;
+      border-left: 3px solid transparent;
+      margin-bottom: 1px;
+      word-break: break-word;
+      animation: typing 0.5s ease forwards;
+    }
 
-#unused-list li { border-left-color: #0ff; }
-#deprecated-list li { border-left-color: #ff0; }
-#js-errors li { border-left-color: #f0f; }
-#js-unused li { border-left-color: #ff8c00; }
+    #unused-list li {
+      border-left-color: #0ff;
+    }
 
-@keyframes typing {
-  0% { opacity: 0; transform: translateX(-10px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
+    #deprecated-list li {
+      border-left-color: #ff0;
+    }
 
-/* Chart */
-#chart-container {
-  background: #010101;
-  padding: 15px;
-  border: 1px solid #0f0;
-  border-radius: 8px;
-  box-shadow: 0 0 10px #00ffaa;
-  max-width: 730px;
-  width: 90%;
-  height: 730px;
-  margin: 0 auto;
-}
+    #js-errors li {
+      border-left-color: #f0f;
+    }
 
-/* Notification */
-.notification {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  background: #0f04;
-  color: #0f0;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  opacity: 0;
-  transform: translateX(100%);
-  transition: all 0.6s ease;
-  z-index: 999;
-  text-shadow: 0 0 6px #0f0;
-}
+    #js-warnings li {
+      border-left-color: #0ff0ff;
+    }
 
-.notification.show {
-  opacity: 1;
-  transform: translateX(0);
-}
+    #js-unused li {
+      border-left-color: #ff8c00;
+    }
 
-@media(max-width:900px){
-  #dashboard { grid-template-columns: 1fr; }
-  #cards { grid-template-columns: 1fr 1fr; }
-  #chart-container { margin-top: 15px; }
-}
+    @keyframes typing {
+      0% {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
 
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .notification {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: #0f04;
+      color: #0f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.6s ease;
+      z-index: 999;
+      text-shadow: 0 0 6px #0f0;
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
   </style>
 </head>
 
@@ -200,6 +193,10 @@ ul li {
             <div class="count" id="count-js">0</div>
           </div>
           <div class="card">
+            <h3>Cambios de JS recomendados</h3>
+            <div class="count" id="count-js-warnings">0</div>
+          </div>
+          <div class="card">
             <h3>Funciones JS sin uso</h3>
             <div class="count" id="count-unused">0</div>
           </div>
@@ -215,14 +212,13 @@ ul li {
           <ul id="js-errors">
             <h3>Errores de JS</h3>
           </ul>
+          <ul id="js-warnings">
+            <h3>Cambios de JS recomendados</h3>
+          </ul>
           <ul id="js-unused">
             <h3>Funciones JS sin uso</h3>
           </ul>
         </div>
-      </div>
-
-      <div id="chart-container">
-        <canvas id="chart"></canvas>
       </div>
     </div>
 
@@ -230,7 +226,6 @@ ul li {
   </div>
 
   <script>
-    // ---- Matrix background ----
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
     let W = canvas.width = window.innerWidth;
@@ -260,9 +255,6 @@ ul li {
       drops = Array(columns).fill(0);
     });
 
-    // ---- Dashboard logic ----
-    let chartInstance = null;
-
     function animateCount(el, value) {
       const current = parseInt(el.textContent) || 0;
       const step = Math.ceil(Math.abs(value - current) / 10) || 1;
@@ -290,38 +282,14 @@ ul li {
         animateCount(document.getElementById("count-css"), data.unusedClasses?.length || 0);
         animateCount(document.getElementById("count-tags"), data.deprecatedTags?.length || 0);
         animateCount(document.getElementById("count-js"), data.jsErrors?.length || 0);
+        animateCount(document.getElementById("count-js-warnings"), data.jsWarnings?.length || 0);
         animateCount(document.getElementById("count-unused"), data.jsUnused?.length || 0);
-
-        const ctxChart = document.getElementById("chart");
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctxChart, {
-          type: 'doughnut',
-          data: {
-            labels: ["CSS", "Etiquetas", "Errores JS", "Funciones JS"],
-            datasets: [{
-              data: [
-                data.unusedClasses?.length || 0,
-                data.deprecatedTags?.length || 0,
-                data.jsErrors?.length || 0,
-                data.jsUnused?.length || 0
-              ],
-              backgroundColor: ["#0ff", "#ff0", "#f0f", "#ff8c00"],
-              hoverOffset: 15,
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#0f0' } }, tooltip: { bodyFont: { size: 12 }, titleFont: { size: 14 } } },
-            animation: { duration: 1000 }
-          }
-        });
 
         const lists = [
           { id: "unused-list", items: data.unusedClasses || [] },
           { id: "deprecated-list", items: data.deprecatedTags || [] },
           { id: "js-errors", items: data.jsErrors || [], template: e => `${e.file}:${e.line} - ${e.message} (${e.ruleId})` },
+          { id: "js-warnings", items: data.jsWarnings || [], template: w => `${w.file}:${w.line} - ${w.message} (${w.ruleId})` },
           { id: "js-unused", items: data.jsUnused || [], template: fn => `${fn.name} (${fn.file})` }
         ];
 
