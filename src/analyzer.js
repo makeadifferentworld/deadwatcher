@@ -11,7 +11,11 @@ import * as cheerio from "cheerio";
 export async function analyze(htmlFiles, cssFiles) {
   const usedClasses = new Set();
   const definedClasses = new Set();
-  const deprecatedTags = ["strike", "font", "center", "u", "big", "tt"];
+  const deprecatedTags = [
+    "acronym", "applet", "basefont", "big", "blink", "center", "font", "marquee",
+    "s", "strike", "tt", "u", "frame", "frameset", "noframes", "isindex", "keygen",
+    "listing", "xmp", "plaintext", "bgsound", "dir"
+  ];
   const foundDeprecatedTags = new Set();
 
   htmlFiles.forEach(file => {
