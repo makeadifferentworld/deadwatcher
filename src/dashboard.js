@@ -1,5 +1,4 @@
 import express from "express";
-import path from "path";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import open from "open";

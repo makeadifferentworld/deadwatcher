@@ -5,6 +5,7 @@ import { reportResults } from "./reporter.js";
 import { updateDashboard } from "./dashboard.js";
 import fs from "fs";
 import path from "path";
+import { deprecatedTagReplacements, getJSSuggestion } from "./suggestions.js";
 
 function getFilesRecursively(dir, exts, ignore = []) {
   let results = [];
@@ -35,12 +36,23 @@ export function startWatcher({ once = false }) {
       const cssHtmlResults = await analyze(htmlFiles, cssFiles);
       const jsResults = await analyzeJS(jsFiles);
 
+      const jsErrorsWithSuggestions = jsResults.lintErrors.map(e => ({
+        ...e,
+        suggestion: getJSSuggestion(e.ruleId, e.message),
+      }));
+
+      const jsWarningsWithSuggestions = jsResults.lintWarnings.map(w => ({
+        ...w,
+        suggestion: getJSSuggestion(w.ruleId, w.message),
+      }));
+
       const results = {
         ...cssHtmlResults,
-        jsErrors: jsResults.lintErrors,
-        jsWarnings: jsResults.lintWarnings,
-        jsUnused: jsResults.unusedFuncs
-      };      
+        jsErrors: jsErrorsWithSuggestions,
+        jsWarnings: jsWarningsWithSuggestions,
+        jsUnused: jsResults.unusedFuncs,
+        tagSuggestions: Object.fromEntries(cssHtmlResults.deprecatedTags.map(t => [t, deprecatedTagReplacements[t] || null])),
+      };
 
       reportResults(results);
       updateDashboard(results);
@@ -60,7 +72,7 @@ export function startWatcher({ once = false }) {
       ignored: /(node_modules|\.git|dist|build|coverage|logs)/,
       ignoreInitial: true
     }
-  );  
+  );
 
   watcher.on("ready", () => {
     console.log("👀 Vigilando cambios...");

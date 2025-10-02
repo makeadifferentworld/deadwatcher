@@ -66,6 +66,7 @@ export async function analyzeJS(jsFiles) {
   const lintWarnings = [];
   const allDecl = new Map();
   const allRefs = new Set();
+  const perFileDecl = new Map();
 
   for (const file of jsFiles) {
     const code = fs.readFileSync(file, "utf8");
@@ -74,8 +75,9 @@ export async function analyzeJS(jsFiles) {
       const result = await eslint.lintText(code, { filePath: file });
       result.forEach((r) =>
         r.messages.forEach((m) => {
-          if (m.ruleId === "no-undef" && allowedGlobals.has(m.message.match(/'(\w+)'/)?.[1])) {
-            return;
+          if (m.ruleId === "no-undef") {
+            const match = m.message.match(/'([A-Za-z0-9_$]+)'/);
+            if (match && allowedGlobals.has(match[1])) return;
           }
 
           const entry = {
@@ -104,20 +106,46 @@ export async function analyzeJS(jsFiles) {
     }
 
     try {
-      const ast = parse(code, { ecmaVersion: "latest", sourceType: "module" });
+      const ast = parse(code, { ecmaVersion: "latest", sourceType: "module", locations: true });
+
       walk.simple(ast, {
         FunctionDeclaration(node) {
-          if (node.id?.name) allDecl.set(node.id.name, file);
+          if (node.id?.name) {
+            const name = node.id.name;
+            if (!allDecl.has(name)) allDecl.set(name, file);
+
+            if (!perFileDecl.has(file)) perFileDecl.set(file, new Set());
+            const set = perFileDecl.get(file);
+            if (set.has(name)) {
+              lintWarnings.push({
+                file,
+                line: node.loc?.start?.line || 0,
+                message: `Función duplicada '${name}' en el mismo archivo.`,
+                ruleId: "duplicate-function",
+                severity: 1,
+              });
+            } else {
+              set.add(name);
+            }
+          }
         },
-        Identifier(node) {
-          allRefs.add(node.name);
+
+        CallExpression(node) {
+          if (node.callee && node.callee.type === "Identifier") {
+            allRefs.add(node.callee.name);
+          }
+        },
+        NewExpression(node) {
+          if (node.callee && node.callee.type === "Identifier") {
+            allRefs.add(node.callee.name);
+          }
         },
       });
-    } catch (e) {
+    } catch (err) {
       lintErrors.push({
         file,
-        line: 0,
-        message: "Error de sintaxis",
+        line: err.loc?.start?.line || 0,
+        message: `Error de sintaxis: ${err.message}`,
         ruleId: "parse-error",
         severity: 2,
       });

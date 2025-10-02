@@ -287,9 +287,9 @@
 
         const lists = [
           { id: "unused-list", items: data.unusedClasses || [] },
-          { id: "deprecated-list", items: data.deprecatedTags || [] },
-          { id: "js-errors", items: data.jsErrors || [], template: e => `${e.file}:${e.line} - ${e.message} (${e.ruleId})` },
-          { id: "js-warnings", items: data.jsWarnings || [], template: w => `${w.file}:${w.line} - ${w.message} (${w.ruleId})` },
+          { id: "deprecated-list", items: data.deprecatedTags || [], template: tag => `${tag} → ${data.tagSuggestions?.[tag] || "Revisar manualmente"}` },
+          { id: "js-errors", items: data.jsErrors || [], template: e => `${e.file}:${e.line} - ${e.message} (${e.ruleId}) → Sugerencia: ${e.suggestion || "Revisar manualmente"}` },
+          { id: "js-warnings", items: data.jsWarnings || [], template: w => `${w.file}:${w.line} - ${w.message} (${w.ruleId}) → Reemplazo: ${w.suggestion || "Revisar manualmente"}` },
           { id: "js-unused", items: data.jsUnused || [], template: fn => `${fn.name} (${fn.file})` }
         ];
 
