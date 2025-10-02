@@ -104,38 +104,48 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
     return false;
   }
 
-  const jsPatterns = [
-    /(?:\.addClass|\.removeClass|\.toggleClass)\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-    /(?:className|class)\s*=\s*['"`]([^'"`]+)['"`]/g,
-    /classList\.(?:add|remove|toggle)\(\s*([^)]+)\)/g,
-    /setAttribute\(\s*['"`]class(?:Name)?['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\)/g,
-    /querySelector(?:All)?\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-    /<[^>]+class\s*=\s*['"`]([^'"`]+)['"`]/g,
-    /['"`]\.([A-Za-z0-9\-_]+)['"`]/g
-  ];
-
   jsFiles.forEach(file => {
     try {
       const content = fs.readFileSync(file, "utf8");
   
-      for (const pat of jsPatterns) {
-        let m;
-        while ((m = pat.exec(content)) !== null) {
-          const group = m[1];
-          if (!group) continue;
-  
-          const cleanedTokens = group
-            .split(/\s+|,/)
-            .map(t => t.replace(/^[.#]/, "").split(":")[0].split("[")[0])
-            .filter(Boolean);
-  
-          cleanedTokens.forEach(t => usedClasses.add(t));
-        }
+      const htmlClassPattern = /class\s*=\s*['"`]([^'"`]+)['"`]/g;
+      let match;
+      while ((match = htmlClassPattern.exec(content)) !== null) {
+        match[1]
+          .split(/\s+/)
+          .filter(Boolean)
+          .forEach(c => usedClasses.add(c));
       }
+  
+      const jqClassPattern = /(?:\.addClass|\.removeClass|\.toggleClass)\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
+      while ((match = jqClassPattern.exec(content)) !== null) {
+        match[1]
+          .split(/\s+/)
+          .filter(Boolean)
+          .forEach(c => usedClasses.add(c));
+      }
+  
+      const classListPattern = /classList\.(?:add|remove|toggle)\(\s*([^)]+)\)/g;
+      while ((match = classListPattern.exec(content)) !== null) {
+        match[1]
+          .replace(/['"`]/g, "")
+          .split(/\s+/)
+          .filter(Boolean)
+          .forEach(c => usedClasses.add(c));
+      }
+  
+      const setAttrPattern = /setAttribute\(\s*['"`]class(?:Name)?['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\)/g;
+      while ((match = setAttrPattern.exec(content)) !== null) {
+        match[1]
+          .split(/\s+/)
+          .filter(Boolean)
+          .forEach(c => usedClasses.add(c));
+      }
+  
     } catch (err) {
       console.warn(`Lectura fallida: ${err.message}`);
     }
-  });  
+  }); 
 
   const unusedClasses = Array.from(definedClasses).filter(
     c => !usedClasses.has(c) && !isIgnoredClass(c)

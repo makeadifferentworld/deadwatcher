@@ -27,13 +27,14 @@ function getFilesRecursively(dir, exts, ignore = []) {
 
 export function startWatcher({ once = false }) {
   const target = process.cwd();
-  const htmlFiles = getFilesRecursively(target, [".html", ".ejs"], ["node_modules"]);
-  const cssFiles = getFilesRecursively(target, [".css"], ["node_modules", "bootstrap"]);
-  const jsFiles = getFilesRecursively(target, [".js"], ["node_modules"]);
 
   async function analyzeAndReport() {
     try {
-      const cssHtmlResults = await analyze(htmlFiles, cssFiles);
+      const htmlFiles = getFilesRecursively(target, [".html", ".ejs"], ["node_modules"]);
+      const cssFiles = getFilesRecursively(target, [".css"], ["node_modules", "bootstrap"]);
+      const jsFiles = getFilesRecursively(target, [".js"], ["node_modules"]);
+
+      const cssHtmlResults = await analyze(htmlFiles, cssFiles, jsFiles);
       const jsResults = await analyzeJS(jsFiles);
 
       const jsErrorsWithSuggestions = jsResults.lintErrors.map(e => ({
@@ -57,7 +58,7 @@ export function startWatcher({ once = false }) {
       reportResults(results);
       updateDashboard(results);
     } catch (err) {
-      console.warn("⚠️ Error durante el análisis:", err.message);
+      console.warn("⚠️ Error durante el análisis:", err.message || err);
     }
   }
 
@@ -66,11 +67,27 @@ export function startWatcher({ once = false }) {
     return;
   }
 
+  let debounceTimer = null;
+  const scheduleAnalyze = (why, p) => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      console.log(`🔁 Ejecutando análisis (trigger: ${why}${p ? ` — ${p}` : ""})`);
+      analyzeAndReport();
+    }, 200);
+  };
+
   const watcher = chokidar.watch(
-    ["./src/**/*.html", "./src/**/*.ejs", "./src/**/*.css", "./src/**/*.js"],
+    [
+      `${target.replace(/\\/g, "/")}/**/*.html`,
+      `${target.replace(/\\/g, "/")}/**/*.ejs`,
+      `${target.replace(/\\/g, "/")}/**/*.css`,
+      `${target.replace(/\\/g, "/")}/**/*.js`
+    ],
     {
       ignored: /(node_modules|\.git|dist|build|coverage|logs)/,
-      ignoreInitial: true
+      ignoreInitial: true,
+      persistent: true,
+      awaitWriteFinish: { stabilityThreshold: 150, pollInterval: 50 }
     }
   );
 
@@ -79,6 +96,9 @@ export function startWatcher({ once = false }) {
     analyzeAndReport();
   });
 
-  watcher.on("change", analyzeAndReport);
-  watcher.on("add", analyzeAndReport);
+  watcher.on("add", p => scheduleAnalyze("add", p));
+  watcher.on("change", p => scheduleAnalyze("change", p));
+  watcher.on("unlink", p => scheduleAnalyze("unlink", p));
+
+  watcher.on("error", err => console.warn("Watcher error:", err));
 }

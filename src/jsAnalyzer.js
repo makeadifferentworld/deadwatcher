@@ -26,6 +26,7 @@ const allowedGlobals = new Set([
   "alert",
   "URL",
   "setInterval",
+  "clearTimeout",
 ]);
 
 function createESLintInstance() {
