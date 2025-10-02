@@ -107,7 +107,7 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
   jsFiles.forEach(file => {
     try {
       const content = fs.readFileSync(file, "utf8");
-  
+
       const htmlClassPattern = /class\s*=\s*['"`]([^'"`]+)['"`]/g;
       let match;
       while ((match = htmlClassPattern.exec(content)) !== null) {
@@ -116,7 +116,7 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
           .filter(Boolean)
           .forEach(c => usedClasses.add(c));
       }
-  
+
       const jqClassPattern = /(?:\.addClass|\.removeClass|\.toggleClass)\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
       while ((match = jqClassPattern.exec(content)) !== null) {
         match[1]
@@ -124,7 +124,7 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
           .filter(Boolean)
           .forEach(c => usedClasses.add(c));
       }
-  
+
       const classListPattern = /classList\.(?:add|remove|toggle)\(\s*([^)]+)\)/g;
       while ((match = classListPattern.exec(content)) !== null) {
         match[1]
@@ -133,7 +133,7 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
           .filter(Boolean)
           .forEach(c => usedClasses.add(c));
       }
-  
+
       const setAttrPattern = /setAttribute\(\s*['"`]class(?:Name)?['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\)/g;
       while ((match = setAttrPattern.exec(content)) !== null) {
         match[1]
@@ -141,11 +141,70 @@ export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
           .filter(Boolean)
           .forEach(c => usedClasses.add(c));
       }
-  
+
+      const concatPattern = /(?:['"`]\s*([A-Za-z0-9\-_ ]+)\s*['"`]\s*)(?:\+\s*[A-Za-z0-9_]+)+|(?:[A-Za-z0-9_]+\s*\+\s*['"`]\s*([A-Za-z0-9\-_ ]+)\s*['"`])/g;
+
+      while ((match = concatPattern.exec(content)) !== null) {
+        const classes = match[1] || match[2];
+        if (classes) {
+          classes.split(/\s+/).filter(Boolean).forEach(c => usedClasses.add(c));
+        }
+      }
+
+      const templatePattern = /`([^`$]+)\$\{[^}]+\}([^`]*)`/g;
+
+      while ((match = templatePattern.exec(content)) !== null) {
+        const before = match[1].trim();
+        const after = match[2].trim();
+        if (before) before.split(/\s+/).filter(Boolean).forEach(c => usedClasses.add(c));
+        if (after) after.split(/\s+/).filter(Boolean).forEach(c => usedClasses.add(c));
+      }
+
+      const templateTernaryPattern = /\$\{\s*[^?}]+\?\s*['"`]([^'"`]+)['"`]\s*:\s*['"`]?([^'"`}]+)?['"`]?\s*\}/g;
+
+      while ((match = templateTernaryPattern.exec(content)) !== null) {
+        const trueBranch = match[1]?.trim();
+        const falseBranch = match[2]?.trim();
+        if (trueBranch) trueBranch.split(/\s+/).filter(Boolean).forEach(c => usedClasses.add(c));
+        if (falseBranch) falseBranch.split(/\s+/).filter(Boolean).forEach(c => usedClasses.add(c));
+      }
+
+      const templateExprPattern = /\$\{([^}]+)\}/g;
+
+      function extractClassesFromExpression(expr) {
+        const results = [];
+
+        if (expr.includes("?") && expr.includes(":")) {
+          const ternaryRegex = /([^?]+)\?\s*([^:]+)\s*:\s*(.+)/;
+          const ternaryMatch = expr.match(ternaryRegex);
+          if (ternaryMatch) {
+            const trueBranch = ternaryMatch[2].trim();
+            const falseBranch = ternaryMatch[3].trim();
+
+            results.push(...extractClassesFromExpression(trueBranch));
+            results.push(...extractClassesFromExpression(falseBranch));
+          }
+        } else {
+          const stringLiteralRegex = /['"`]([^'"`]+)['"`]/g;
+          let m;
+          while ((m = stringLiteralRegex.exec(expr)) !== null) {
+            m[1].split(/\s+/).filter(Boolean).forEach(c => results.push(c));
+          }
+        }
+
+        return results;
+      }
+
+      while ((match = templateExprPattern.exec(content)) !== null) {
+        const expr = match[1].trim();
+        const classes = extractClassesFromExpression(expr);
+        classes.forEach(c => usedClasses.add(c));
+      }
+
     } catch (err) {
       console.warn(`Lectura fallida: ${err.message}`);
     }
-  }); 
+  });
 
   const unusedClasses = Array.from(definedClasses).filter(
     c => !usedClasses.has(c) && !isIgnoredClass(c)
