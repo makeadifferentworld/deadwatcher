@@ -255,14 +255,26 @@
       drops = Array(columns).fill(0);
     });
 
+    const intervals = {};
+
     function animateCount(el, value) {
+      if (intervals[el.id]) clearInterval(intervals[el.id]);
+
       const current = parseInt(el.textContent) || 0;
       const step = Math.ceil(Math.abs(value - current) / 10) || 1;
       let i = current;
-      const interval = setInterval(() => {
-        if (i < value) i += step;
-        else if (i > value) i -= step;
-        else { i = value; clearInterval(interval); }
+
+      intervals[el.id] = setInterval(() => {
+        if (i < value) {
+          i += step;
+          if (i > value) i = value;
+        } else if (i > value) {
+          i -= step;
+          if (i < value) i = value;
+        } else {
+          clearInterval(intervals[el.id]);
+          delete intervals[el.id];
+        }
         el.textContent = i;
       }, 50);
     }
