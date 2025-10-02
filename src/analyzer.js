@@ -7,10 +7,12 @@ import * as cheerio from "cheerio";
  * Analiza clases CSS no usadas y etiquetas HTML obsoletas
  * @param {string[]} htmlFiles - Archivos HTML/EJS
  * @param {string[]} cssFiles - Archivos CSS
+ * @param {string[]} jsFiles - Archivos JS
  */
-export async function analyze(htmlFiles, cssFiles) {
+export async function analyze(htmlFiles, cssFiles, jsFiles = []) {
   const usedClasses = new Set();
   const definedClasses = new Set();
+
   const deprecatedTags = [
     "acronym", "applet", "basefont", "big", "blink", "center", "font", "marquee",
     "s", "strike", "tt", "u", "frame", "frameset", "noframes", "isindex", "keygen",
@@ -19,39 +21,124 @@ export async function analyze(htmlFiles, cssFiles) {
   const foundDeprecatedTags = new Set();
 
   htmlFiles.forEach(file => {
-    const content = fs.readFileSync(file, "utf8");
-    const $ = cheerio.load(content);
+    try {
+      const content = fs.readFileSync(file, "utf8");
+      const $ = cheerio.load(content);
 
-    $("[class]").each((_, el) =>
-      $(el)
-        .attr("class")
-        .split(/\s+/)
-        .forEach(c => usedClasses.add(c))
-    );
+      $("[class]").each((_, el) =>
+        $(el)
+          .attr("class")
+          .split(/\s+/)
+          .filter(Boolean)
+          .forEach(c => usedClasses.add(c))
+      );
 
-    deprecatedTags.forEach(tag => {
-      if ($(tag).length > 0) foundDeprecatedTags.add(tag);
-    });
+      deprecatedTags.forEach(tag => {
+        if ($(tag).length > 0) foundDeprecatedTags.add(tag);
+      });
+    } catch (err) {
+      console.warn(`Warning leyendo HTML ${file}: ${err.message}`);
+    }
   });
 
   cssFiles.forEach(file => {
-    const content = fs.readFileSync(file, "utf8");
     try {
+      const content = fs.readFileSync(file, "utf8");
       const root = postcss().process(content, { parser: safeParser }).root;
 
       root.walkRules(rule => {
         rule.selectors.forEach(sel => {
-          const matches = sel.match(/\.[\w-]+/g);
+          const matches = sel.match(/\.[A-Za-z0-9\-_]+/g);
           if (matches) matches.forEach(c => definedClasses.add(c.slice(1)));
         });
       });
     } catch (err) {
-      console.warn(`⚠️ Error analizando ${file}: ${err.reason || err.message}`);
+      console.warn(`⚠️ Error analizando CSS ${file}: ${err.reason || err.message}`);
     }
   });
 
+  const ignoredPatterns = [
+    // Bootstrap 5
+    "container", "container-fluid", "row", "col", "col-*", "d-*", "flex-*", "justify-*", "align-*",
+    "btn", "btn-*", "btn-outline-*", "btn-group", "btn-group-*", "card", "card-*", "alert", "alert-*",
+    "modal", "modal-*", "fade", "show", "collapse", "collapsed", "dropdown", "dropdown-*", "tooltip",
+    "popover", "nav", "nav-*", "navbar", "navbar-*", "form-control", "form-select", "form-check", "form-check-*",
+    "active", "disabled", "visually-hidden", "text-*", "bg-*", "border", "border-*",
+
+    // DataTables
+    "dataTable", "dataTables_*", "paginate_button", "dataTables_wrapper", "sorting", "sorting_*",
+    "sorting_asc", "sorting_desc", "sorting_disabled", "odd", "even", "row_selected", "highlight",
+
+    // Font Awesome
+    "fa", "fa-*", "fas", "far", "fal", "fab", "fa-lg", "fa-2x", "fa-3x", "fa-4x", "fa-5x",
+
+    // Animate.css
+    "animate__animated", "animate__fadeIn", "animate__fadeOut", "animate__bounce", "animate__flash",
+    "animate__headShake", "animate__heartBeat", "animate__hinge", "animate__jello", "animate__pulse",
+    "animate__rubberBand", "animate__shakeX", "animate__shakeY", "animate__slideInUp", "animate__slideOutDown",
+    "animate__zoomIn", "animate__zoomOut",
+  ];
+
+  function isIgnoredClass(c) {
+    if (!c) return false;
+    for (const p of ignoredPatterns) {
+      if (p.includes("*")) {
+        const parts = p.split("*").map(s => s.trim());
+        if (parts.length === 1 && parts[0] === "") return true;
+        let lastIndex = -1;
+        let ok = true;
+        for (const part of parts) {
+          if (!part) continue;
+          const found = c.indexOf(part, lastIndex + 1);
+          if (found === -1) {
+            ok = false;
+            break;
+          }
+          lastIndex = found + part.length - 1;
+        }
+        if (ok) return true;
+      } else {
+        if (p === c) return true;
+      }
+    }
+    return false;
+  }
+
+  const jsPatterns = [
+    /(?:\.addClass|\.removeClass|\.toggleClass)\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
+    /(?:className|class)\s*=\s*['"`]([^'"`]+)['"`]/g,
+    /classList\.(?:add|remove|toggle)\(\s*([^)]+)\)/g,
+    /setAttribute\(\s*['"`]class(?:Name)?['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\)/g,
+    /querySelector(?:All)?\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
+    /<[^>]+class\s*=\s*['"`]([^'"`]+)['"`]/g,
+    /['"`]\.([A-Za-z0-9\-_]+)['"`]/g
+  ];
+
+  jsFiles.forEach(file => {
+    try {
+      const content = fs.readFileSync(file, "utf8");
+  
+      for (const pat of jsPatterns) {
+        let m;
+        while ((m = pat.exec(content)) !== null) {
+          const group = m[1];
+          if (!group) continue;
+  
+          const cleanedTokens = group
+            .split(/\s+|,/)
+            .map(t => t.replace(/^[.#]/, "").split(":")[0].split("[")[0])
+            .filter(Boolean);
+  
+          cleanedTokens.forEach(t => usedClasses.add(t));
+        }
+      }
+    } catch (err) {
+      console.warn(`Lectura fallida: ${err.message}`);
+    }
+  });  
+
   const unusedClasses = Array.from(definedClasses).filter(
-    c => !usedClasses.has(c)
+    c => !usedClasses.has(c) && !isIgnoredClass(c)
   );
 
   return {
