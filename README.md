@@ -33,13 +33,13 @@ npm i -g deadwatcher
 ```
 
 Uso:
-  deadwatcher --help, -h       Mostrar opciones.
-  deadwatcher --once           Ejecuta el análisis una sola vez.
-  deadwatcher --dashboard      Arranca el dashboard en http://localhost:3001
-  deadwatcher --fix            Activa el fixer interactivo (pregunta antes de aplicar).
-  deadwatcher --apply-all      Modo no interactivo: aplica todas las correcciones sin preguntar.
-  deadwatcher --patch-only     No modifica archivos, genera .diff y suggested-changes.json en ./deadwatcher_patches
-  deadwatcher --revert <TS>    Revertir backups con timestamp EXACTO o "all" para intentar revertir todo.
+-  deadwatcher --help, -h       Mostrar opciones.
+-  deadwatcher --once           Ejecuta el análisis una sola vez.
+-  deadwatcher --dashboard      Arranca el dashboard en http://localhost:3001
+-  deadwatcher --fix            Activa el fixer interactivo (pregunta antes de aplicar).
+-  deadwatcher --apply-all      Modo no interactivo: aplica todas las correcciones sin preguntar.
+-  deadwatcher --patch-only     No modifica archivos, genera .diff y suggested-changes.json en ./deadwatcher_patches
+-  deadwatcher --revert <TS>    Revertir backups con timestamp EXACTO o "all" para intentar revertir todo.
 
 ---
 Autor: [makeadifferentworld](https://github.com/makeadifferentworld)
