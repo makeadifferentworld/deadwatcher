@@ -6,6 +6,7 @@ import { updateDashboard } from "./dashboard.js";
 import fs from "fs";
 import path from "path";
 import { deprecatedTagReplacements, getJSSuggestion } from "./suggestions.js";
+import { interactiveFix, generatePatchesForResults } from "./fixer.js";
 
 function getFilesRecursively(dir, exts, ignore = []) {
   let results = [];
@@ -25,7 +26,7 @@ function getFilesRecursively(dir, exts, ignore = []) {
   return results;
 }
 
-export function startWatcher({ once = false }) {
+export function startWatcher({ once = false, fix = false, applyAll = false, patchOnly = false, dashboard = false } = {}) {
   const target = process.cwd();
 
   async function analyzeAndReport() {
@@ -57,6 +58,18 @@ export function startWatcher({ once = false }) {
 
       reportResults(results);
       updateDashboard(results);
+
+      if (fix || applyAll || patchOnly) {
+        if (patchOnly) {
+          const patches = await generatePatchesForResults(results, { cssFiles, jsFiles });
+          console.log(`📦 Generados ${patches.length} parches en ./deadwatcher_patches (sin aplicar).`);
+        } else if (applyAll) {
+          console.log("⚙ Modo apply-all: aplicando todas las correcciones sin preguntar...");
+          await interactiveFix(results, { cssFiles, jsFiles, applyAll: true });
+        } else {
+          await interactiveFix(results, { cssFiles, jsFiles, applyAll: false });
+        }
+      }
     } catch (err) {
       console.warn("⚠️ Error durante el análisis:", err.message || err);
     }
